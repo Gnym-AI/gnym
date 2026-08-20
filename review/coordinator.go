@@ -1,10 +1,21 @@
 package review
 
+import (
+	"errors"
+)
+
 type Coordinator struct {
 	diffSource DiffSource
 	reviewer   Reviewer
 	reviewers  []ReviewerConfig
 	sink       CommentSink
+}
+
+func (c *Coordinator) validateConfiguration() error {
+	if len(c.reviewers) == 0 {
+		return errors.New("no reviewers configured")
+	}
+	return nil
 }
 
 func NewCoordinator(
@@ -21,7 +32,12 @@ func NewCoordinator(
 	}
 }
 
-func (c Coordinator) Run() error {
+func (c *Coordinator) Run() error {
+	err := c.validateConfiguration()
+	if err != nil {
+		return err
+	}
+
 	diff, err := c.diffSource.GetDiff()
 	if err != nil {
 		return err
