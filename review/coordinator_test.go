@@ -2,6 +2,7 @@ package review
 
 import (
 	"errors"
+	"gnym/reviewer"
 	"reflect"
 	"testing"
 )
@@ -18,21 +19,21 @@ func (f *fakeDiffSource) GetDiff() (Diff, error) {
 }
 
 type reviewCall struct {
-	diff   Diff
-	config ReviewerConfig
+	diff   string
+	config reviewer.Config
 }
 
 type fakeReviewer struct {
-	results []ReviewerResult
+	results []reviewer.Result
 	errors  []error
 	calls   []reviewCall
 }
 
-func (f *fakeReviewer) Review(diff Diff, config ReviewerConfig) (ReviewerResult, error) {
-	f.calls = append(f.calls, reviewCall{diff: diff, config: config})
+func (f *fakeReviewer) Review(request reviewer.Request) (reviewer.Result, error) {
+	f.calls = append(f.calls, reviewCall{diff: request.Diff, config: request.Config})
 	callIndex := len(f.calls) - 1
 
-	var result ReviewerResult
+	var result reviewer.Result
 	if callIndex < len(f.results) {
 		result = f.results[callIndex]
 	}
@@ -46,26 +47,26 @@ func (f *fakeReviewer) Review(diff Diff, config ReviewerConfig) (ReviewerResult,
 }
 
 type fakeCommentSink struct {
-	runs []ReviewersRun
+	runs []Run
 	err  error
 }
 
-func (f *fakeCommentSink) Save(run ReviewersRun) error {
+func (f *fakeCommentSink) Save(run Run) error {
 	f.runs = append(f.runs, run)
 	return f.err
 }
 
 func TestCoordinatorRun(t *testing.T) {
 	diff := Diff{Content: "diff --git a/main.go b/main.go"}
-	configs := []ReviewerConfig{
+	configs := []reviewer.Config{
 		{Name: "correctness", Provider: "openai", Model: "model-a", Prompt: "Find bugs"},
 		{Name: "security", Provider: "openai", Model: "model-b", Prompt: "Find vulnerabilities"},
 	}
-	results := []ReviewerResult{
+	results := []reviewer.Result{
 		{
 			Reviewer: "correctness",
 			Summary:  "One issue",
-			Comments: []Comment{{
+			Comments: []reviewer.Comment{{
 				File: "main.go", Line: 10, Severity: "warning", Message: "Check this error",
 			}},
 		},
@@ -73,9 +74,9 @@ func TestCoordinatorRun(t *testing.T) {
 	}
 
 	diffSource := &fakeDiffSource{diff: diff}
-	reviewer := &fakeReviewer{results: results}
+	diffReviewer := &fakeReviewer{results: results}
 	sink := &fakeCommentSink{}
-	coordinator := NewCoordinator(diffSource, reviewer, configs, sink)
+	coordinator := NewCoordinator(diffSource, diffReviewer, configs, sink)
 
 	if err := coordinator.Run(); err != nil {
 		t.Fatalf("Run() error = %v, want nil", err)
@@ -86,14 +87,14 @@ func TestCoordinatorRun(t *testing.T) {
 	}
 
 	wantReviewCalls := []reviewCall{
-		{diff: diff, config: configs[0]},
-		{diff: diff, config: configs[1]},
+		{diff: diff.Content, config: configs[0]},
+		{diff: diff.Content, config: configs[1]},
 	}
-	if !reflect.DeepEqual(reviewer.calls, wantReviewCalls) {
-		t.Errorf("Reviewer.Review() calls = %#v, want %#v", reviewer.calls, wantReviewCalls)
+	if !reflect.DeepEqual(diffReviewer.calls, wantReviewCalls) {
+		t.Errorf("Reviewer.Review() calls = %#v, want %#v", diffReviewer.calls, wantReviewCalls)
 	}
 
-	wantRuns := []ReviewersRun{{Results: results}}
+	wantRuns := []Run{{Results: results}}
 	if !reflect.DeepEqual(sink.runs, wantRuns) {
 		t.Errorf("CommentSink.Save() runs = %#v, want %#v", sink.runs, wantRuns)
 	}
@@ -102,12 +103,12 @@ func TestCoordinatorRun(t *testing.T) {
 func TestCoordinatorRunDiffSourceErrorStopsExecution(t *testing.T) {
 	wantErr := errors.New("could not get diff")
 	diffSource := &fakeDiffSource{err: wantErr}
-	reviewer := &fakeReviewer{}
+	diffReviewer := &fakeReviewer{}
 	sink := &fakeCommentSink{}
 	coordinator := NewCoordinator(
 		diffSource,
-		reviewer,
-		[]ReviewerConfig{{Name: "correctness"}},
+		diffReviewer,
+		[]reviewer.Config{{Name: "correctness"}},
 		sink,
 	)
 
@@ -119,8 +120,8 @@ func TestCoordinatorRunDiffSourceErrorStopsExecution(t *testing.T) {
 	if diffSource.calls != 1 {
 		t.Errorf("DiffSource.GetDiff() calls = %d, want 1", diffSource.calls)
 	}
-	if len(reviewer.calls) != 0 {
-		t.Errorf("Reviewer.Review() calls = %d, want 0", len(reviewer.calls))
+	if len(diffReviewer.calls) != 0 {
+		t.Errorf("Reviewer.Review() calls = %d, want 0", len(diffReviewer.calls))
 	}
 	if len(sink.runs) != 0 {
 		t.Errorf("CommentSink.Save() calls = %d, want 0", len(sink.runs))
@@ -130,18 +131,18 @@ func TestCoordinatorRunDiffSourceErrorStopsExecution(t *testing.T) {
 func TestCoordinatorRunReviewerErrorStopsExecution(t *testing.T) {
 	wantErr := errors.New("review failed")
 	diff := Diff{Content: "the diff"}
-	configs := []ReviewerConfig{
+	configs := []reviewer.Config{
 		{Name: "first"},
 		{Name: "failing"},
 		{Name: "not-called"},
 	}
 	diffSource := &fakeDiffSource{diff: diff}
-	reviewer := &fakeReviewer{
-		results: []ReviewerResult{{Reviewer: "first"}, {}},
+	diffReviewer := &fakeReviewer{
+		results: []reviewer.Result{{Reviewer: "first"}, {}},
 		errors:  []error{nil, wantErr},
 	}
 	sink := &fakeCommentSink{}
-	coordinator := NewCoordinator(diffSource, reviewer, configs, sink)
+	coordinator := NewCoordinator(diffSource, diffReviewer, configs, sink)
 
 	err := coordinator.Run()
 
@@ -149,11 +150,11 @@ func TestCoordinatorRunReviewerErrorStopsExecution(t *testing.T) {
 		t.Errorf("Run() error = %v, want %v", err, wantErr)
 	}
 	wantReviewCalls := []reviewCall{
-		{diff: diff, config: configs[0]},
-		{diff: diff, config: configs[1]},
+		{diff: diff.Content, config: configs[0]},
+		{diff: diff.Content, config: configs[1]},
 	}
-	if !reflect.DeepEqual(reviewer.calls, wantReviewCalls) {
-		t.Errorf("Reviewer.Review() calls = %#v, want %#v", reviewer.calls, wantReviewCalls)
+	if !reflect.DeepEqual(diffReviewer.calls, wantReviewCalls) {
+		t.Errorf("Reviewer.Review() calls = %#v, want %#v", diffReviewer.calls, wantReviewCalls)
 	}
 	if len(sink.runs) != 0 {
 		t.Errorf("CommentSink.Save() calls = %d, want 0", len(sink.runs))
@@ -162,14 +163,14 @@ func TestCoordinatorRunReviewerErrorStopsExecution(t *testing.T) {
 
 func TestCoordinatorRunCommentSinkErrorIsReturned(t *testing.T) {
 	wantErr := errors.New("could not save comments")
-	result := ReviewerResult{Reviewer: "correctness", Summary: "Done"}
+	result := reviewer.Result{Reviewer: "correctness", Summary: "Done"}
 	diffSource := &fakeDiffSource{diff: Diff{Content: "the diff"}}
-	reviewer := &fakeReviewer{results: []ReviewerResult{result}}
+	diffReviewer := &fakeReviewer{results: []reviewer.Result{result}}
 	sink := &fakeCommentSink{err: wantErr}
 	coordinator := NewCoordinator(
 		diffSource,
-		reviewer,
-		[]ReviewerConfig{{Name: "correctness"}},
+		diffReviewer,
+		[]reviewer.Config{{Name: "correctness"}},
 		sink,
 	)
 
@@ -178,7 +179,7 @@ func TestCoordinatorRunCommentSinkErrorIsReturned(t *testing.T) {
 	if !errors.Is(err, wantErr) {
 		t.Errorf("Run() error = %v, want %v", err, wantErr)
 	}
-	wantRuns := []ReviewersRun{{Results: []ReviewerResult{result}}}
+	wantRuns := []Run{{Results: []reviewer.Result{result}}}
 	if !reflect.DeepEqual(sink.runs, wantRuns) {
 		t.Errorf("CommentSink.Save() runs = %#v, want %#v", sink.runs, wantRuns)
 	}
@@ -186,13 +187,13 @@ func TestCoordinatorRunCommentSinkErrorIsReturned(t *testing.T) {
 
 func TestCoordinatorRunWithZeroReviewers(t *testing.T) {
 	diff := Diff{Content: "diff --git a/main.go b/main.go"}
-	var configs []ReviewerConfig
-	var results []ReviewerResult
+	var configs []reviewer.Config
+	var results []reviewer.Result
 
 	diffSource := &fakeDiffSource{diff: diff}
-	reviewer := &fakeReviewer{results: results}
+	diffReviewer := &fakeReviewer{results: results}
 	sink := &fakeCommentSink{}
-	coordinator := NewCoordinator(diffSource, reviewer, configs, sink)
+	coordinator := NewCoordinator(diffSource, diffReviewer, configs, sink)
 
 	err := coordinator.Run()
 
