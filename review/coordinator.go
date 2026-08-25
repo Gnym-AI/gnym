@@ -2,12 +2,13 @@ package review
 
 import (
 	"errors"
+	"gnym/reviewer"
 )
 
 type Coordinator struct {
 	diffSource DiffSource
 	reviewer   Reviewer
-	reviewers  []ReviewerConfig
+	reviewers  []reviewer.Config
 	sink       CommentSink
 }
 
@@ -21,7 +22,7 @@ func (c *Coordinator) validateConfiguration() error {
 func NewCoordinator(
 	diffSource DiffSource,
 	reviewer Reviewer,
-	reviewers []ReviewerConfig,
+	reviewers []reviewer.Config,
 	sink CommentSink,
 ) *Coordinator {
 	return &Coordinator{
@@ -43,9 +44,10 @@ func (c *Coordinator) Run() error {
 		return err
 	}
 
-	results := make([]ReviewerResult, 0, len(c.reviewers))
+	results := make([]reviewer.Result, 0, len(c.reviewers))
 	for _, config := range c.reviewers {
-		result, err := c.reviewer.Review(diff, config)
+		request := reviewer.Request{diff.Content, config}
+		result, err := c.reviewer.Review(request)
 		if err != nil {
 			return err
 		}
@@ -53,7 +55,7 @@ func (c *Coordinator) Run() error {
 		results = append(results, result)
 	}
 
-	run := ReviewersRun{
+	run := Run{
 		Results: results,
 	}
 

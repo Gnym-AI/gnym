@@ -1,13 +1,15 @@
 package review
 
+import "gnym/reviewer"
+
 type DiffSource interface {
 	GetDiff() (Diff, error)
 }
 
 type Reviewer interface {
-	Review(diff Diff, config ReviewerConfig) (ReviewerResult, error)
+	Review(request reviewer.Request) (reviewer.Result, error)
 }
 
 type CommentSink interface {
-	Save(run ReviewersRun) error
+	Save(run Run) error
 }
