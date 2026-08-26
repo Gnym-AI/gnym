@@ -46,7 +46,7 @@ func (c *Coordinator) Run() error {
 
 	results := make([]reviewer.Result, 0, len(c.reviewers))
 	for _, config := range c.reviewers {
-		request := reviewer.Request{diff.Content, config}
+		request := reviewer.Request{Diff: diff.Content, Config: config}
 		result, err := c.reviewer.Review(request)
 		if err != nil {
 			return err
