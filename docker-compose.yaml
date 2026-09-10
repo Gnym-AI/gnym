@@ -1,0 +1,22 @@
+services:
+  go:
+    image: golang:1.25-trixie
+    working_dir: /workspace
+
+    volumes:
+      - .:/workspace
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+  go-testing:
+    build:
+      context: .
+      dockerfile: docker/testing.Dockerfile
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+volumes:
+  go-mod-cache:
+  go-build-cache:

@@ -1,0 +1,10 @@
+{
+  "name": "Gnym - Go",
+  "image": "mcr.microsoft.com/devcontainers/go:2-1.25-trixie",
+  "postCreateCommand": "go version",
+  "customizations": {
+    "jetbrains": {
+      "backend": "GoLand"
+    }
+  }
+}
