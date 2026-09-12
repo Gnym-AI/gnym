@@ -14,10 +14,11 @@ docker compose run --rm go go run . review \
   --diff-source file://changes.diff
 ```
 
-The file sink writes the configured JSON output after all configured reviewers complete.
+The file sink writes a validated version-1 JSON review run after all configured reviewers succeed. The stub returns zero findings; this verifies the pipeline, not the quality of the code.
 
 ## Documentation
 
 - [Get your first review result](docs/getting-started.md)
 - [Configure reviewers and the sink](docs/configuration.md)
+- [Read the review output contract](docs/review-schema.md)
 - [Understand Gnym's architecture](docs/architecture.md)
