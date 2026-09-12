@@ -31,17 +31,13 @@ type Comment struct {
 
 func (c *Comment) UnmarshalJSON(data []byte) error {
 	var v Comment
-	if err := strictjson.Object(data, []string{"file", "severity", "message"}, map[string]any{"file": &v.File, "severity": &v.Severity, "message": &v.Message, "side": &v.Side, "line": &v.Line, "end_line": &v.EndLine}); err != nil {
+	var line, endLine positiveInt64
+	if err := strictjson.Object(data, []string{"file", "severity", "message"}, map[string]any{"file": &v.File, "severity": &v.Severity, "message": &v.Message, "side": &v.Side, "line": &line, "end_line": &endLine}); err != nil {
 		return err
 	}
+	v.Line, v.EndLine = int64(line), int64(endLine)
 	var fields map[string]json.RawMessage
 	_ = json.Unmarshal(data, &fields)
-	if _, ok := fields["line"]; ok && v.Line <= 0 {
-		return fieldError("line", "must be positive")
-	}
-	if _, ok := fields["end_line"]; ok && v.EndLine <= 0 {
-		return fieldError("end_line", "must be positive")
-	}
 	if _, ok := fields["side"]; ok && v.Side == "" {
 		return fieldError("side", "must be old or new")
 	}

@@ -4,6 +4,7 @@ package strictjson
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"unicode/utf8"
 )
@@ -30,6 +31,13 @@ func Object(data []byte, required []string, fields map[string]any) error {
 			return fmt.Errorf("%s: null is not allowed", key)
 		}
 		if err := json.Unmarshal(value, target); err != nil {
+			// encoding/json includes the complete numeric token in type errors.
+			// Report the rule without reflecting untrusted payload data.
+			var typeError *json.UnmarshalTypeError
+			var syntaxError *json.SyntaxError
+			if errors.As(err, &typeError) || errors.As(err, &syntaxError) {
+				return fmt.Errorf("%s: incompatible type or value", key)
+			}
 			return fmt.Errorf("%s: invalid value: %w", key, err)
 		}
 	}
