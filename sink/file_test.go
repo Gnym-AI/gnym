@@ -42,13 +42,13 @@ func TestFileWritesContentToJson(t *testing.T) {
 					{
 						File:     "file.go",
 						Line:     1,
-						Severity: reviewer.SeverityWarning,
+						Severity: reviewer.SeverityMedium,
 						Message:  "this is a comment",
 					},
 					{
 						File:     "file.go",
 						Line:     2,
-						Severity: reviewer.SeverityError,
+						Severity: reviewer.SeverityHigh,
 						Message:  "this is another comment",
 					},
 				},

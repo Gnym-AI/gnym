@@ -38,7 +38,7 @@ func TestRunReview(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
-	if !strings.Contains(string(contents), `"Reviewer": "correctness"`) {
+	if !strings.Contains(string(contents), `"reviewer": "correctness"`) {
 		t.Errorf("review output = %s", contents)
 	}
 }

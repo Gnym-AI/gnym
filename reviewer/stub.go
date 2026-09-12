@@ -10,7 +10,7 @@ func (s *Stub) Review(request Request) (Result, error) {
 			{
 				File:     "stub.go",
 				Line:     1,
-				Severity: SeverityWarning,
+				Severity: SeverityMedium,
 				Message:  "This is a stub review",
 			},
 		},
