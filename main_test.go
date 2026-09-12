@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"gnym/config"
 	"gnym/input"
 	"gnym/reviewer"
@@ -10,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRunReview(t *testing.T) {
@@ -38,8 +40,34 @@ func TestRunReview(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
-	if !strings.Contains(string(contents), `"reviewer": "correctness"`) {
-		t.Errorf("review output = %s", contents)
+	var output struct {
+		SchemaVersion string `json:"schema_version"`
+		Status        string `json:"status"`
+		Reviews       []struct {
+			Reviewer  string            `json:"reviewer"`
+			CreatedAt string            `json:"created_at"`
+			Summary   string            `json:"summary"`
+			Comments  []json.RawMessage `json:"comments"`
+		} `json:"reviews"`
+		Failures []json.RawMessage `json:"failures"`
+	}
+	decoder := json.NewDecoder(bytes.NewReader(contents))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&output); err != nil {
+		t.Fatalf("decode output: %v; contents = %s", err, contents)
+	}
+	if output.SchemaVersion != "1" || output.Status != "complete" || len(output.Reviews) != 1 || output.Failures == nil || len(output.Failures) != 0 {
+		t.Fatalf("invalid envelope: %s", contents)
+	}
+	result := output.Reviews[0]
+	if result.Reviewer != "correctness" || result.Summary != "Stub review completed" || result.Comments == nil || len(result.Comments) != 0 {
+		t.Fatalf("invalid stub result: %s", contents)
+	}
+	if _, err := time.Parse(time.RFC3339Nano, result.CreatedAt); err != nil || !strings.HasSuffix(result.CreatedAt, "Z") {
+		t.Fatalf("invalid timestamp %q: %v", result.CreatedAt, err)
+	}
+	if stdout.Len() != 0 || stderr.Len() != 0 {
+		t.Fatalf("unexpected success output: stdout=%q stderr=%q", stdout.String(), stderr.String())
 	}
 }
 
