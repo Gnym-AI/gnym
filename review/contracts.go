@@ -7,7 +7,7 @@ type DiffSource interface {
 }
 
 type Reviewer interface {
-	Review(request reviewer.Request) (reviewer.Payload, error)
+	Review(request reviewer.Request) (reviewer.Result, error)
 }
 
 type CommentSink interface {
