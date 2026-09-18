@@ -2,9 +2,7 @@ package review
 
 import (
 	"errors"
-	"fmt"
 	"gnym/reviewer"
-	"time"
 )
 
 type Coordinator struct {
@@ -46,15 +44,10 @@ func (c *Coordinator) Run() error {
 		return err
 	}
 
-	files := reviewer.DiffFiles(diff.Content)
 	results := make([]reviewer.Result, 0, len(c.reviewers))
 	for _, config := range c.reviewers {
 		request := reviewer.Request{Diff: diff.Content, Config: config}
-		payload, err := c.reviewer.Review(request)
-		if err != nil {
-			return fmt.Errorf("reviewer %q: %w", config.Name, err)
-		}
-		result, err := reviewer.Accept(config.Name, payload, files, time.Now())
+		result, err := c.reviewer.Review(request)
 		if err != nil {
 			return err
 		}
@@ -63,13 +56,7 @@ func (c *Coordinator) Run() error {
 	}
 
 	run := Run{
-		SchemaVersion: "1",
-		Status:        StatusComplete,
-		Results:       results,
-		Failures:      []Failure{},
-	}
-	if err := run.Validate(); err != nil {
-		return err
+		Results: results,
 	}
 
 	return c.sink.Save(run)

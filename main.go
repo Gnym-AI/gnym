@@ -45,10 +45,10 @@ var sinkFactories = map[string]sinkFactory{
 
 type reviewerRouter map[string]review.Reviewer
 
-func (r reviewerRouter) Review(request reviewer.Request) (reviewer.Payload, error) {
+func (r reviewerRouter) Review(request reviewer.Request) (reviewer.Result, error) {
 	configuredReviewer, ok := r[request.Config.Name]
 	if !ok {
-		return reviewer.Payload{}, fmt.Errorf("reviewer %q is not registered", request.Config.Name)
+		return reviewer.Result{}, fmt.Errorf("reviewer %q is not registered", request.Config.Name)
 	}
 	return configuredReviewer.Review(request)
 }

@@ -1,6 +1,6 @@
 # Get your first review result
 
-This guide runs Gnym's local v0.1 pipeline and produces a JSON review run. The current stub reviewer returns a deterministic summary and zero findings; it does not analyze the diff with an AI model.
+This guide runs Gnym's local v0.1 pipeline and produces a JSON review result. The current stub reviewer returns deterministic sample feedback; it does not analyze the diff with an AI model.
 
 ## Prerequisites
 
@@ -61,25 +61,26 @@ If Gnym reports `open changes.diff: no such file or directory`, confirm that `ch
 
 ## 4. Verify the result
 
-Open `review-results.json`. The current stub reviewer produces this JSON shape; `created_at` will contain your run's UTC acceptance time:
+Open `review-results.json`. The current stub reviewer produces this JSON shape:
 
 ```json
-{
-  "schema_version": "1",
-  "status": "complete",
-  "reviews": [
-    {
-      "reviewer": "correctness",
-      "created_at": "2026-09-12T12:00:00Z",
-      "summary": "Stub review completed",
-      "comments": []
-    }
-  ],
-  "failures": []
-}
+[
+  {
+    "Reviewer": "correctness",
+    "Summary": "Stub reivew completed",
+    "Comments": [
+      {
+        "File": "stub.go",
+        "Line": 1,
+        "Severity": "warning",
+        "Message": "This is a stub review"
+      }
+    ]
+  }
+]
 ```
 
-The result confirms that Gnym read the diff, routed the configured reviewer, validated and accepted its payload, and saved the review run. Empty `comments` from the stub do not establish that the code has no defects. See the [review output contract](review-schema.md) when consuming this JSON.
+The misspelling in the stub summary is part of the current v0.1 output. The result confirms that Gnym read the diff, routed the configured reviewer, collected its result, and saved the review run.
 
 ## Check the version
 
@@ -96,3 +97,4 @@ gnym v0.1.0
 ```
 
 Next, see [Configure reviewers and the sink](configuration.md) to add prompt files, multiple reviewer perspectives, and provider-specific options supported by v0.1.
+
