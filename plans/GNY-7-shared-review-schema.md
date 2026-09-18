@@ -2,7 +2,11 @@
 
 ## 1. Status and revision
 
-Revision 1 — approved by the developer on 2026-09-12.
+Revision 2 — delivery decomposition approved by the developer on 2026-09-17.
+
+Revision 2 changes only the executable Task breakdown. The approved behavior,
+acceptance criteria, verification requirements, scope, non-goals, failure semantics,
+compatibility, and security boundaries remain unchanged from revision 1.
 
 Story: GNY-7. Parent Epic: GNY-1. Downstream Stories: GNY-8 orchestration,
 GNY-3 OpenAI adaptation, GNY-4 sinks.
@@ -229,17 +233,35 @@ No live provider verification required.
 
 ## 11. Smallest coherent implementation tasks
 
-All Tasks belong to GNY-7; YouTrack IDs follow versioning.
+All Tasks belong to GNY-7. Each diff-producing Task must remain at or below 500
+review lines, including tests, schemas, and documentation. A prerequisite checkpoint
+means its Task PR is accepted, merged into the Story branch, and verified there.
+Dependent branches start from that updated Story branch, never from sibling Tasks.
 
-| ID | Owner/outcome | Prerequisite | Criteria/evidence |
-| --- | --- | --- | --- |
-| T-1 | Coder: shared payload/result/run contract, schemas, membership extraction, semantic validation | Approved versioned plan | AC-1–5, VR-1–3; preserve structurally valid inaccurate lines |
-| T-2 | Coder: validation/trusted metadata in sequential success flow, stub/sink/caller migration | T-1 integrated on Story | AC-1/2/6/7; coordinator/sink/CLI checks |
-| T-3 | Tester: independent integrated verification and additional evidence | T-1/T-2 integrated | AC-1–8, VR-1–6; exact tested commit and defect handoffs |
-| T-4 | Documenter: schema/migration guidance, introductory and architecture updates | T-3 passes | AC-8; examples/links checked against implementation |
+| ID | Owner/outcome | Expected review lines | Prerequisite | Criteria/evidence |
+| --- | --- | ---: | --- | --- |
+| T-1 | Coder: define and validate the provider payload boundary | 360–440 | Revision 2 versioned | AC-1/2, VR-1 |
+| T-2 | Coder: extract diff filenames and accept trusted reviewer results | 330–430 | T-1 checkpoint | AC-1/3/4, VR-1/2 |
+| T-3 | Coder: define and validate version-1 aggregate runs | 180–300 | T-2 checkpoint | AC-5, VR-3 |
+| T-4 | Coder: publish checked-in JSON Schemas with drift protection | 350–450 | T-3 checkpoint | AC-2/5/8, VR-3 |
+| T-5 | Coder: integrate validated complete runs through coordinator and file sink | 280–380 | T-3 checkpoint; independent of T-4 | AC-1/2/6/7, VR-4/5 |
+| T-6 | Tester: independently verify the integrated contract and pipeline | 340–460 | T-4 and T-5 checkpoints | AC-1–8, VR-1–6 |
+| T-7 | Documenter: document schema, migration, boundaries, and examples | 170–280 | T-6 checkpoint | AC-8, VR-5/6 |
 
-Story branch from verified main; Task branches from parent Story after prerequisites
-integrate. Never branch dependent work from sibling Task branches.
+T-1 owns strict provider payload structure, exact signed 64-bit location numbers,
+lexical paths, advisory location rules, severity values, normalization, and bounded
+diagnostics. T-2 owns supported Git/unified metadata extraction, exact membership,
+trusted identity and UTC acceptance time, and accepted-result validation. T-3 owns
+the aggregate envelope, status/cardinality rules, failures, identity uniqueness, and
+nested-result validation. T-4 owns offline Draft 2020-12 provider and aggregate
+schemas plus drift protection. T-5 owns sequential fail-fast integration, complete
+run construction, stub correction, file output, callers, and focused runtime tests.
+T-6 owns independent tests, the full container suite, targeted mutation checks, and
+the exact tested Story commit. T-7 documents only verified behavior.
+
+If a Task approaches 450 review lines, the planner must apply its documented seam
+before implementation continues. T-4 and T-5 may proceed independently after T-3;
+all other dependencies are sequential.
 
 ## 12. Documentation impact
 
@@ -258,7 +280,9 @@ file. Preserve arbitrary-input compatibility without promising all patch dialect
 
 ## 14. Approval and delivery handoff
 
-Revision 1 approved in the conversation on 2026-09-12. Orchestrator versions this
-artifact on `story/GNY-7-shared-review-schema`. Planner records the reference,
-creates T-1–T-4 as real YouTrack Tasks with dependencies, advances Story to Approved.
-Implementation begins only after that handoff.
+Revision 1 product behavior was approved on 2026-09-12. Revision 2 replaces only
+the delivery decomposition and was directed by the developer on 2026-09-17 after
+the oversized non-planner GNY-15/GNY-16 setup was dropped. The orchestrator versions
+this artifact on `story/GNY-7-shared-review-schema`; the planner-owned handoff creates
+T-1–T-7 as new YouTrack Tasks and records their dependencies. Implementation begins
+with T-1 only after that handoff.
