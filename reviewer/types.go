@@ -99,7 +99,8 @@ func (c *commentList) UnmarshalJSON(data []byte) error {
 }
 
 type Result struct {
-	Reviewer string
-	Summary  string
-	Comments []Comment
+	Reviewer  string
+	CreatedAt string
+	Summary   string
+	Comments  []Comment
 }
