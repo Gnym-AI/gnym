@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gnym.dev/schemas/review-run.schema.json",
+  "$comment": "Whitespace-only text, safe repository-relative paths, diff membership, range order, unique reviewer identities, and advisory location semantics are enforced by Go validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "reviews", "failures"],
+  "properties": {
+    "schema_version": {"const": "1"},
+    "status": {"enum": ["complete", "partial", "failed"]},
+    "reviews": {"type": "array", "items": {"$ref": "#/$defs/result"}},
+    "failures": {"type": "array", "items": {"$ref": "#/$defs/failure"}}
+  },
+  "$defs": {
+    "comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "severity", "message"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "side": {"enum": ["old", "new"]},
+        "line": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "end_line": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "severity": {"enum": ["low", "medium", "high", "critical"]},
+        "message": {"type": "string", "minLength": 1}
+      },
+      "dependentRequired": {
+        "side": ["line"],
+        "line": ["side"],
+        "end_line": ["side", "line"]
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer", "created_at", "summary", "comments"],
+      "properties": {
+        "reviewer": {"type": "string", "minLength": 1},
+        "created_at": {"type": "string", "format": "date-time", "pattern": "Z$"},
+        "summary": {"type": "string", "minLength": 1},
+        "comments": {"type": "array", "items": {"$ref": "#/$defs/comment"}}
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer", "code", "message"],
+      "properties": {
+        "reviewer": {"type": "string", "minLength": 1},
+        "code": {"enum": ["invalid_output", "reviewer_error"]},
+        "message": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "status": {"const": "complete"},
+        "reviews": {"minItems": 1},
+        "failures": {"maxItems": 0}
+      }
+    },
+    {
+      "properties": {
+        "status": {"const": "partial"},
+        "reviews": {"minItems": 1},
+        "failures": {"minItems": 1}
+      }
+    },
+    {
+      "properties": {
+        "status": {"const": "failed"},
+        "reviews": {"maxItems": 0},
+        "failures": {"minItems": 1}
+      }
+    }
+  ]
+}
