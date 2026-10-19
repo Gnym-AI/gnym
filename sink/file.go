@@ -11,7 +11,10 @@ type File struct {
 }
 
 func (f *File) Save(run review.Run) error {
-	data, err := json.MarshalIndent(run.Results, "", "  ")
+	if err := run.Validate(); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(run, "", "  ")
 	if err != nil {
 		return err
 	}
