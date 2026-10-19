@@ -85,11 +85,14 @@ The `file` sink requires:
 
 | Field | Required | Behavior |
 | --- | --- | --- |
-| `path` | Yes | File path where the JSON result array is written. It must not be blank. |
+| `path` | Yes | File path where the version 1 review run is written. It must not be blank. |
 
 A relative sink path is resolved from the Gnym process working directory. The Compose `go` service uses `/workspace`, the repository root. Saving replaces the contents of an existing file at that path. Parent directories are not created automatically.
 
-The output is an indented JSON array with one result per configured reviewer, in reviewer order. The current Go types produce capitalized keys such as `Reviewer`, `Summary`, and `Comments`.
+The output is an indented version 1 envelope with lowercase snake_case keys. It
+contains one accepted result per configured reviewer, in reviewer order. See
+[Use the version 1 review schema](review-schema.md) for the exact contract and
+migration from the earlier PascalCase result array.
 
 ## Diff source argument
 
@@ -128,4 +131,3 @@ Pipeline construction then validates registered types and provider-specific opti
 During execution, Gnym stops on the first diff-source or reviewer error and does not call the sink. A sink error is returned after the completed review run is passed to the sink. The current CLI prints errors to standard error with a `gnym:` prefix and exits with status 1.
 
 Gnym v0.1 does not load a `.env` file or define credentials in its JSON contract because none of the registered providers require secrets.
-
