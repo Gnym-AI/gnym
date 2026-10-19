@@ -19,7 +19,7 @@ file diff source -> coordinator -> reviewer router -> configured reviewers
                    file sink
                        |
                        v
-              JSON result array
+            version 1 run envelope
 ```
 
 The CLI loads and validates configuration, selects factories from the registered provider types, constructs the runtime dependencies, and passes them to the coordinator. The coordinator contains no JSON, filesystem-path, or command-line parsing logic.
@@ -38,7 +38,11 @@ The `input` package contains diff-source implementations. `FileDiffSource` reads
 
 ### `reviewer`
 
-The `reviewer` package defines reviewer configuration, requests, results, comments, and severities. Its current `Stub` implementation returns fixed sample output. It does not analyze the request's diff or prompt.
+The `reviewer` package defines reviewer configuration, provider payloads, accepted
+results, comments, and severities. It validates provider-owned content and diff-file
+membership before adding the configured reviewer identity and UTC acceptance time.
+Its current `Stub` implementation returns `Stub review completed` with zero findings;
+it does not analyze the request's diff or prompt.
 
 ### `review`
 
@@ -50,7 +54,7 @@ type DiffSource interface {
 }
 
 type Reviewer interface {
-    Review(request reviewer.Request) (reviewer.Result, error)
+    Review(request reviewer.Request) (reviewer.Payload, error)
 }
 
 type CommentSink interface {
@@ -58,11 +62,18 @@ type CommentSink interface {
 }
 ```
 
-`Coordinator.Run` validates that at least one reviewer is present, fetches the diff once, executes configured reviewers sequentially, collects their results, and saves one review run. It stops immediately on an error from the diff source or a reviewer. In either case, it does not save a partial run.
+`Coordinator.Run` validates that at least one reviewer is present, fetches the diff
+once, extracts supported filename metadata, executes configured reviewers
+sequentially, accepts their payloads, and saves one complete review run. It stops
+immediately on a reviewer or validation error. In either case, it does not invoke
+the sink or save a partial run.
 
 ### `sink`
 
-The `sink` package contains output implementations. The file sink serializes the review run's results as indented JSON and writes them to its configured path.
+The `sink` package contains output implementations. The file sink validates the
+aggregate run, serializes the entire envelope as indented JSON, and writes it to its
+configured path. Diff membership is already established at acceptance and is not
+repeated by the sink.
 
 ### `main`
 
@@ -110,6 +121,9 @@ Gnym performs work in a fixed sequence:
 
 There is no retry, timeout, cancellation, parallel review, or partial-result persistence in v0.1. Errors propagate to the CLI, which prints them with a `gnym:` prefix and exits with status 1. Successful commands return normally with status 0.
 
+The version 1 shapes, semantic checks, provider/sink boundary, and deferred behavior
+are documented in [Use the version 1 review schema](review-schema.md).
+
 ## Verify changes
 
 Run ordinary Go verification through the `go` service:
@@ -125,4 +139,3 @@ docker compose run --rm go-testing gremlins unleash
 ```
 
 Mutation testing is diagnostic evidence, not a requirement to mutate every process-boundary line. The small `main` wrapper delegates meaningful command behavior to testable functions; uncovered mutations in that wrapper do not by themselves imply a missing product behavior test.
-
