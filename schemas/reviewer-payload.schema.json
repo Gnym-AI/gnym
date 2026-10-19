@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gnym.dev/schemas/reviewer-payload.schema.json",
+  "$comment": "Nonblank text, safe repository-relative paths, diff membership, range order, and advisory location semantics are enforced by Go validation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "comments"],
+  "properties": {
+    "summary": {"type": "string", "minLength": 1},
+    "comments": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/comment"}
+    }
+  },
+  "$defs": {
+    "comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "severity", "message"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "side": {"enum": ["old", "new"]},
+        "line": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "end_line": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "severity": {"enum": ["low", "medium", "high", "critical"]},
+        "message": {"type": "string", "minLength": 1}
+      },
+      "dependentRequired": {
+        "side": ["line"],
+        "line": ["side"],
+        "end_line": ["side", "line"]
+      }
+    }
+  }
+}
