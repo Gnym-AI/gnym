@@ -20,4 +20,5 @@ The file sink writes the configured JSON output after all configured reviewers c
 
 - [Get your first review result](docs/getting-started.md)
 - [Configure reviewers and the sink](docs/configuration.md)
+- [Use the version 1 review schema](docs/review-schema.md)
 - [Understand Gnym's architecture](docs/architecture.md)

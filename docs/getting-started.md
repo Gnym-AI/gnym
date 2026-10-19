@@ -61,26 +61,29 @@ If Gnym reports `open changes.diff: no such file or directory`, confirm that `ch
 
 ## 4. Verify the result
 
-Open `review-results.json`. The current stub reviewer produces this JSON shape:
+Open `review-results.json`. The current stub reviewer produces a complete version 1
+run. The exact `created_at` value is the UTC time when Gnym accepted the result:
 
 ```json
-[
-  {
-    "Reviewer": "correctness",
-    "Summary": "Stub reivew completed",
-    "Comments": [
-      {
-        "File": "stub.go",
-        "Line": 1,
-        "Severity": "warning",
-        "Message": "This is a stub review"
-      }
-    ]
-  }
-]
+{
+  "schema_version": "1",
+  "status": "complete",
+  "reviews": [
+    {
+      "reviewer": "correctness",
+      "created_at": "2026-10-19T14:55:17.123456789Z",
+      "summary": "Stub review completed",
+      "comments": []
+    }
+  ],
+  "failures": []
+}
 ```
 
-The misspelling in the stub summary is part of the current v0.1 output. The result confirms that Gnym read the diff, routed the configured reviewer, collected its result, and saved the review run.
+The empty comments array is intentional: the stub verifies routing and output without
+inventing a finding unrelated to the supplied diff. The result confirms that Gnym
+read the diff, routed the configured reviewer, accepted its payload, and saved the
+review run.
 
 ## Check the version
 
@@ -96,5 +99,7 @@ The v0.1 command prints:
 gnym v0.1.0
 ```
 
-Next, see [Configure reviewers and the sink](configuration.md) to add prompt files, multiple reviewer perspectives, and provider-specific options supported by v0.1.
-
+Next, see [Configure reviewers and the sink](configuration.md) to add prompt files,
+multiple reviewer perspectives, and provider-specific options supported by v0.1.
+See [Use the version 1 review schema](review-schema.md) for the provider payload,
+output contract, migration notes, and validation boundaries.
